@@ -1,0 +1,281 @@
+---
+title: "Requested Figures"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(kableExtra)
+library(socR)
+```
+
+```{r read in data, include = FALSE, warning = FALSE}
+data = read_excel('/Users/orszagl2/Documents/socR/connect/connect_sitf_results.xlsx')
+data$module1_submit_time = as.Date(data$module1_submit_time)
+```
+
+period before and after for entire dataset 
+
+```{r old vs new data}
+df_old = data[1:1000, ]
+df_new = data[2001:3000, ]
+```
+
+```{r histograms}
+ggplot(df_old, aes(x = SOCcer_Rank))+
+  geom_histogram(bins = 4, color = 'blue4', fill = 'darkgrey')+
+  theme_minimal()+
+  labs(title = "Histogram of Rank (Time Period 1)")
+tbl_old = df_old%>%
+  group_by(SOCcer_Rank)%>%
+  summarize(count = n(), 
+            s1_med = round(median(score_1), 2),
+            s1_IQR = paste0("(", round(quantile(score_1, .25), 2), ",", round(quantile(score_1, .75), 2), ")"))
+ggplot(df_new, aes(x = SOCcer_Rank))+
+  geom_histogram(bins = 6, color = 'blue4', fill = 'darkgrey' )+
+  theme_minimal()+
+  labs(title = "Histogram of Rank (Time Period 2)")
+tbl_new = df_new%>%
+  group_by(SOCcer_Rank)%>%
+  summarize(count = n(), 
+            s1_med = round(median(score_1), 2),
+            s1_IQR = paste0("(", round(quantile(score_1, .25), 2), ",", round(quantile(score_1, .75), 2), ")"))
+```
+
+```{r boxplots}
+ggplot(df_old, aes(x = SOCcer_Rank, y = score_1))+
+  geom_boxplot(aes(group = SOCcer_Rank), color = "blue4", fill = "darkgrey")+
+  theme_minimal()+
+  labs(title = "Boxplot Rank vs. S1 Score (Time Period 1)")
+ggplot(df_new, aes(x = SOCcer_Rank, y = score_1))+
+  geom_boxplot(aes(group = SOCcer_Rank), color = "blue4", fill = "darkgrey")+
+  theme_minimal()+
+  labs(title = "Boxplot Rank vs. S1 Score (Time Period 2)")
+```
+```{r 2 dig function}
+library(socR)
+to_2d <- to_level(soc2010_all,soc2d)
+```
+
+
+```{r two digit transformation}
+df_new = df_new%>%
+    mutate(soc_chosen = case_when(
+      SOCcer_Rank == 1 ~ soc2010_1,
+      SOCcer_Rank == 2 ~ soc2010_2,
+      SOCcer_Rank == 3 ~ soc2010_3,
+      SOCcer_Rank == 4 ~ soc2010_4,
+      SOCcer_Rank == 5 ~ soc2010_5,
+      SOCcer_Rank == 6 ~ soc2010_6
+    ),
+    score_chosen = case_when(
+      SOCcer_Rank == 1 ~ score_1,
+      SOCcer_Rank == 2 ~ score_2,
+      SOCcer_Rank == 3 ~ score_3,
+      SOCcer_Rank == 4 ~ score_4,
+      SOCcer_Rank == 5 ~ score_5,
+      SOCcer_Rank == 6 ~ score_6))
+df_new$soc_chosen = to_2d(df_new$soc_chosen)
+df_old = df_old%>%
+    mutate(soc_chosen = case_when(
+      SOCcer_Rank == 1 ~ soc2010_1,
+      SOCcer_Rank == 2 ~ soc2010_2,
+      SOCcer_Rank == 3 ~ soc2010_3,
+      SOCcer_Rank == 4 ~ soc2010_4,
+      SOCcer_Rank == 5 ~ soc2010_5,
+      SOCcer_Rank == 6 ~ soc2010_6
+    ),
+    score_chosen = case_when(
+      SOCcer_Rank == 1 ~ score_1,
+      SOCcer_Rank == 2 ~ score_2,
+      SOCcer_Rank == 3 ~ score_3,
+      SOCcer_Rank == 4 ~ score_4,
+      SOCcer_Rank == 5 ~ score_5,
+      SOCcer_Rank == 6 ~ score_6))
+df_old$soc_chosen = to_2d(df_old$soc_chosen)
+```
+
+```{r score differences}
+df_old$score_diff = df_old$score_1 - df_old$score_chosen
+df_new$score_diff = df_new$score_1 - df_new$score_chosen
+```
+
+```{r grouped dataframes}
+# new 
+df_new_grouped = df_new%>%
+  group_by(soc_chosen)%>%
+  summarize(num_jobs = n(),
+         med_s1 = paste0(round(median(score_1), 2), " (", round(quantile(score_1, .25), 2), ", ", round(quantile(score_1, .75), 2), ")"),
+         med_s_chosen = paste0(round(median(score_chosen), 2), " (", round(quantile(score_chosen, .25), 2), ", ", round(quantile(score_chosen, .75), 2), ")"),
+         score_diff = paste0(round(median(score_diff), 2), " (", round(quantile(score_diff, .25), 2), ", ", round(quantile(score_diff, .75), 2), ")"),
+         med_rank = round(median(SOCcer_Rank), 2),
+         mean_rank = round(mean(SOCcer_Rank), 2))
+# old
+df_old_grouped = df_old%>%
+  group_by(soc_chosen)%>%
+  summarize(num_jobs = n(),
+         med_s1 = paste0(round(median(score_1), 2), " (", round(quantile(score_1, .25), 2), ", ", round(quantile(score_1, .75), 2), ")"),
+         med_s_chosen = paste0(round(median(score_chosen), 2), " (", round(quantile(score_chosen, .25), 2), ", ", round(quantile(score_chosen, .75), 2), ")"),
+         score_diff = paste0(round(median(score_diff), 2), " (", round(quantile(score_diff, .25), 2), ", ", round(quantile(score_diff, .75), 2), ")"),
+         med_rank = round(median(SOCcer_Rank), 2),
+         mean_rank = round(mean(SOCcer_Rank), 2))
+```
+
+```{r soc categories}
+df_old_grouped$cat_chosen = lookup_code(df_old_grouped$soc_chosen, soc2010_all)
+df_new_grouped$cat_chosen = lookup_code(df_new_grouped$soc_chosen, soc2010_all)
+```
+
+```{r total rows}
+# new
+df_new_total = df_new%>%
+  summarize(soc_chosen = "Total",
+    num_jobs = n(),
+         med_s1 = paste0(round(median(score_1), 2), " (", round(quantile(score_1, .25), 2), ", ", round(quantile(score_1, .75), 2), ")"),
+         med_s_chosen = paste0(round(median(score_chosen), 2), " (", round(quantile(score_chosen, .25), 2), ", ", round(quantile(score_chosen, .75), 2), ")"),
+    score_diff = paste0(round(median(score_diff), 2), " (", round(quantile(score_diff, .25), 2), ", ", round(quantile(score_diff, .75), 2), ")"),
+    med_rank = round(median(SOCcer_Rank), 2),
+    mean_rank = round(mean(SOCcer_Rank), 2),
+    cat_chosen = "Total")
+# old 
+df_old_total = df_old%>%
+  summarize(soc_chosen = "Total",
+            num_jobs = n(),
+         med_s1 = paste0(round(median(score_1), 2), " (", round(quantile(score_1, .25), 2), ", ", round(quantile(score_1, .75), 2), ")"),
+         med_s_chosen = paste0(round(median(score_chosen), 2), " (", round(quantile(score_chosen, .25), 2), ", ", round(quantile(score_chosen, .75), 2), ")"),
+         score_diff = paste0(round(median(score_diff), 2), " (", round(quantile(score_diff, .25), 2), ", ", round(quantile(score_diff, .75), 2), ")"),
+         med_rank = round(median(SOCcer_Rank), 2),
+         mean_rank = round(mean(SOCcer_Rank), 2),
+         cat_chosen = "Total")
+
+# attach rows
+df_new_grouped = rbind(df_new_grouped, df_new_total)
+df_new_grouped = df_new_grouped[, c(1,8,2,3,4,5,6,7)]
+df_old_grouped = rbind(df_old_grouped, df_old_total)
+df_old_grouped = df_old_grouped[, c(1,8,2,3,4,5,6,7)]
+```
+
+\newpage
+```{r table1}
+df_old_grouped%>%
+  kable(col.names = c("2 Digit Code", "2 Digit Category", "# Jobs", "S1 Median (IQR)", "S(Chosen) Median (IQR)", "S-Diff Median (IQR)", "Median Rank", "Mean Rank"), caption = "Time Period 1 2-Digit Soc Codes")%>%
+  landscape()%>%
+  kable_styling(font_size = 7)
+```
+\newpage
+```{r table2}
+df_new_grouped%>%
+  kable(col.names = c("2 Digit Code", "2 Digit Category", "# Jobs", "S1 Median (IQR)", "S(Chosen) Median (IQR)", "S-Diff Median (IQR)", "Median Rank", "Mean Rank"), caption = "Time Period 2 2-Digit Soc Codes")%>%
+  landscape()%>%
+  kable_styling(font_size = 7)
+```
+
+
+```{r}
+df_old = df_old%>%mutate(categ = case_when(
+    score_1 <= 0.10 ~ "0.0-0.1",
+    score_1 <= 0.20 & score_1 > 0.10 ~ "0.1-0.2",
+    score_1 <= 0.30 & score_1 > 0.20 ~ "0.2-0.3",
+    score_1 <= 0.40 & score_1 > 0.30 ~ "0.3-0.4",
+    score_1 <= 0.50 & score_1 > 0.40 ~ "0.4-0.5",
+    score_1 <= 0.60 & score_1 > 0.50 ~ "0.5-0.6",
+    score_1 <= 0.70 & score_1 > 0.60 ~ "0.6-0.7",
+    score_1 <= 0.80 & score_1 > 0.70 ~ "0.7-0.8",
+    score_1 <= 0.90 & score_1 > 0.80 ~ "0.8-0.9",
+    score_1 <= 1.00 & score_1 > 0.90 ~ "0.9-1.0"))
+
+df_new = df_new%>%mutate(categ = case_when(
+    score_1 <= 0.10 ~ "0.0-0.1",
+    score_1 <= 0.20 & score_1 > 0.10 ~ "0.1-0.2",
+    score_1 <= 0.30 & score_1 > 0.20 ~ "0.2-0.3",
+    score_1 <= 0.40 & score_1 > 0.30 ~ "0.3-0.4",
+    score_1 <= 0.50 & score_1 > 0.40 ~ "0.4-0.5",
+    score_1 <= 0.60 & score_1 > 0.50 ~ "0.5-0.6",
+    score_1 <= 0.70 & score_1 > 0.60 ~ "0.6-0.7",
+    score_1 <= 0.80 & score_1 > 0.70 ~ "0.7-0.8",
+    score_1 <= 0.90 & score_1 > 0.80 ~ "0.8-0.9",
+    score_1 <= 1.00 & score_1 > 0.90 ~ "0.9-1.0"))
+```
+
+```{r}
+df_old_non1 = df_old%>%filter(SOCcer_Rank !=1)
+ggplot(df_old_non1, aes(x = score_1, y = score_chosen, color = as.factor(SOCcer_Rank)))+
+  geom_point()+
+  geom_abline(slope = 1)+
+  scale_x_continuous(limits = c(0,1))+
+  scale_y_continuous(limits = c(0,1))+
+  labs(x = "Score 1",
+       y = "Score Chosen",
+       color = "Rank",
+       title = "Score 1 vs. Score Chosen (Time Period 1)")
+```
+```{r}
+df_old_non1 = df_old%>%filter(SOCcer_Rank !=1)
+ggplot(df_old_non1, aes(x = score_1, y = score_diff, color = as.factor(SOCcer_Rank)))+
+  geom_point()+
+  scale_x_continuous(limits = c(0,1))+
+  scale_y_continuous(limits = c(0,1))+
+  labs(x = "Score 1",
+       y = "Score Difference",
+       color = "Rank",
+       title = "Score 1 vs. Score Difference (Time Period 1)")
+```
+
+```{r}
+df_new_non1 = df_new%>%filter(SOCcer_Rank !=1)
+ggplot(df_new_non1, aes(x = score_1, y = score_chosen, color = as.factor(SOCcer_Rank)))+
+  geom_point()+
+  geom_abline(slope = 1)+
+  scale_x_continuous(limits = c(0,1))+
+  scale_y_continuous(limits = c(0,1))+
+  labs(x = "Score 1",
+       y = "Score Chosen",
+       color = "Rank",
+       title = "Score 1 vs. Score Chosen (Time Period 2)")
+```
+
+```{r}
+ggplot(df_new_non1, aes(x = score_1, y = score_diff, color = as.factor(SOCcer_Rank)))+
+  geom_point()+
+  scale_x_continuous(limits = c(0,1))+
+  scale_y_continuous(limits = c(0,1))+
+  labs(x = "Score 1",
+       y = "Score Difference",
+       color = "Rank",
+       title = "Score 1 vs. Score Difference (Time Period 2)")
+```
+
+
+```{r}
+ggplot(data = df_old_non1, aes(x = categ, y = score_diff))+
+  geom_boxplot()+
+  labs(title = "Time Period 1",
+       x = "Score 1",
+       y = "Score Difference")
+ggplot(data = df_new_non1, aes(x = categ, y = score_diff))+
+  geom_boxplot()+
+  labs(title = "Time Period 2",
+       x = "Score 1",
+       y = "Score Difference")
+```
+
+```{r}
+ggplot(data = df_old_non1, aes(x = categ, y = score_chosen))+
+  geom_boxplot()+
+  labs(title = "Time Period 1",
+       x = "Score 1",
+       y = "Score Chosen")
+ggplot(data = df_new_non1, aes(x = categ, y = score_chosen))+
+  geom_boxplot()+
+  labs(title = "Time Period 2",
+       x = "Score 1",
+       y = "Score Chosen")
+```
+```{r}
+df_old%>%group_by(SOCcer_Rank)%>%summarize(mean_score_chosen = median(score_chosen), n = n())
+df_new%>%group_by(SOCcer_Rank)%>%summarize(mean_score_chosen = median(score_chosen), n = n())
+```
