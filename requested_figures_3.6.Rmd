@@ -14,15 +14,15 @@ library(socR)
 ```
 
 ```{r read in data, include = FALSE, warning = FALSE}
-data = read_excel('/Users/orszagl2/Documents/socR/connect/connect_sitf_results.xlsx')
+data = read_excel('/Users/orszagl2/Documents/socR/connect/connect_sitf_results.data_update.xlsx')
 data$module1_submit_time = as.Date(data$module1_submit_time)
 ```
 
 period before and after for entire dataset 
 
 ```{r old vs new data}
-df_old = data[1:1000, ]
-df_new = data[2001:3000, ]
+df_old = data%>%filter(strata == "stratum-A")
+df_new = data%>%filter(strata == "stratum-C")
 ```
 
 ```{r histograms}
